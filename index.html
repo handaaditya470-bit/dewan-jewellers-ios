@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Dewan Jewellers — Live Bullion Rates</title>
+  <link rel="icon" type="image/jpeg" href="./logo.jpg" />
+
+  <!-- iOS Home Screen App (PWA) Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Dewan Jewellers" />
+  <meta name="theme-color" content="#0B0E14" />
+  <link rel="apple-touch-icon" href="./logo.jpg" />
+  <link rel="manifest" href="./manifest.json" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: {
+            obsidian: '#0B0E14', card: '#131722', cardHover: '#1A202E',
+            gold: { 300: '#F8DF8B', 400: '#F5C542', 500: '#D4AF37', 600: '#B58E22', 900: '#2E250B' },
+            tickUp: '#10B981', tickDown: '#EF4444'
+          },
+          boxShadow: { goldGlow: '0 0 24px rgba(212, 175, 55, 0.14)' }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { background:#06080C; color:#F3F4F6; font-family:'Inter',sans-serif; -webkit-tap-highlight-color:transparent; overflow-x:hidden; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:#0B0E14; }
+    ::-webkit-scrollbar-thumb { background:#252B3B; border-radius:9999px; }
+    @keyframes marqueeScroll { 0% { transform:translateX(0%); } 100% { transform:translateX(-50%); } }
+    .marquee-track { display:flex; width:max-content; animation:marqueeScroll 28s linear infinite; }
+    .marquee-track:hover { animation-play-state:paused; }
+    @keyframes flashGreen { 0%{background:rgba(16,185,129,.92);color:#fff;border-color:#10B981;} 65%{background:rgba(16,185,129,.32);color:#fff;} 100%{background:rgba(16,185,129,.08);} }
+    @keyframes flashRed { 0%{background:rgba(239,68,68,.92);color:#fff;border-color:#EF4444;} 65%{background:rgba(239,68,68,.32);color:#fff;} 100%{background:rgba(239,68,68,.08);} }
+    .flash-up { animation:flashGreen 0.72s ease-out forwards; }
+    .flash-down { animation:flashRed 0.72s ease-out forwards; }
+    .text-gold-gradient { background:linear-gradient(135deg,#F8DF8B 0%,#D4AF37 52%,#F5C542 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .btn-gold { background:linear-gradient(135deg,#F5C542 0%,#D4AF37 55%,#B58E22 100%); color:#0B0E14; }
+    .btn-gold:active { transform:scale(0.98); }
+    .pt-safe { padding-top:calc(0.65rem + env(safe-area-inset-top, 0px)); }
+    .pb-safe { padding-bottom:calc(6rem + env(safe-area-inset-bottom, 0px)); }
+    .nav-pb-safe { padding-bottom:calc(0.45rem + env(safe-area-inset-bottom, 0px)); }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center bg-[#06080C] selection:bg-gold-500/30 selection:text-gold-300">
+
+  <div id="app-shell" class="w-full max-w-lg min-h-screen bg-obsidian border-x border-white/5 shadow-2xl flex flex-col relative">
+
+    <!-- TOP APP BAR (iOS NOTCH SAFE) -->
+    <header class="sticky top-0 z-30 bg-obsidian/95 backdrop-blur-md border-b border-gold-500/20 px-3.5 pb-2.5 pt-safe">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-300 via-gold-500 to-gold-600 p-[1.5px] shadow-goldGlow shrink-0 overflow-hidden">
+            <div class="w-full h-full rounded-[10px] bg-black flex items-center justify-center overflow-hidden">
+              <img src="./logo.jpg" alt="Dewan Jewellers Logo" class="w-full h-full object-contain p-0.5"
+                   onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'text-gold-400 font-extrabold text-sm\'>DJ</span>';" />
+            </div>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-[15px] sm:text-base font-extrabold tracking-tight text-gold-gradient truncate leading-tight">DEWAN JEWELLERS</h1>
+            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Amritsar • India Desk</span>
+              <span class="text-slate-600">•</span>
+              <span id="ist-clock" class="text-[10px] font-mono text-slate-300 tabular-nums">--:--:-- IST</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div id="market-status-pill" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/35">
+            <span class="relative flex h-2 w-2 shrink-0">
+              <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span id="status-dot" class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+            </span>
+            <span id="status-text" class="text-[9px] font-bold tracking-wider text-amber-300 uppercase whitespace-nowrap">CONNECTING</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- iOS SAFARI INSTALL BANNER (ONLY SHOWN IN IPHONE SAFARI) -->
+      <div id="ios-install-banner" class="hidden mt-2.5 px-3 py-2 rounded-xl bg-gold-500/15 border border-gold-500/35 flex items-center justify-between gap-2">
+        <div class="text-[11px] text-gold-200 leading-snug">
+          <span class="font-bold text-gold-400">Install App:</span> Tap <span class="font-bold text-white">Share</span> (↑) below, then <span class="font-bold text-white">Add to Home Screen</span>.
+        </div>
+        <button id="dismiss-ios-banner" type="button" class="text-gold-300 hover:text-white text-xs font-bold px-1.5 py-0.5">✕</button>
+      </div>
+
+      <div id="frozen-banner" class="hidden mt-2.5 px-3 py-1.5 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-red-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span class="text-xs font-bold tracking-wide text-red-300 uppercase">Rates Temporarily Held</span>
+        </div>
+        <span class="text-[10px] text-red-200/80 font-medium">Call Desk for Quote</span>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto pb-safe">
+
+      <!-- TAB 1: LIVE RATES -->
+      <section id="tab-live" class="tab-panel block">
+        <div class="bg-gold-500/10 border-b border-gold-500/20 py-1.5 overflow-hidden relative flex items-center">
+          <div class="px-2.5 py-0.5 bg-gold-500 text-obsidian text-[10px] font-extrabold uppercase tracking-wider rounded-r-md z-10 shrink-0 shadow">LIVE</div>
+          <div class="overflow-hidden flex-1">
+            <div id="marquee-track" class="marquee-track text-xs font-medium text-gold-300 whitespace-nowrap"></div>
+          </div>
+        </div>
+
+        <div class="p-3.5 space-y-3.5">
+          <!-- Top MCX Reference Cards -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-card rounded-xl p-2.5 border border-white/10">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-gold-400 tracking-wider uppercase">MCX GOLD</span>
+                <span class="text-[9px] text-slate-400 font-mono">10g</span>
+              </div>
+              <div id="val-mcx-gold" class="mt-1 text-sm sm:text-[15px] font-mono font-bold text-white tabular-nums rounded px-1 -mx-1 py-0.5">--</div>
+              <div id="sym-mcx-gold" class="mt-1 text-[9px] font-mono text-slate-400 truncate">GOLD FUT</div>
+            </div>
+
+            <div class="bg-card rounded-xl p-2.5 border border-white/10">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-300 tracking-wider uppercase">MCX SILVER</span>
+                <span class="text-[9px] text-slate-400 font-mono">1kg</span>
+              </div>
+              <div id="val-mcx-silver" class="mt-1 text-sm sm:text-[15px] font-mono font-bold text-white tabular-nums rounded px-1 -mx-1 py-0.5">--</div>
+              <div id="sym-mcx-silver" class="mt-1 text-[9px] font-mono text-slate-400 truncate">SILVER FUT</div>
+            </div>
+
+            <div class="bg-card rounded-xl p-2.5 border border-white/10">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-sky-400 tracking-wider uppercase">TAX / GST</span>
+                <span class="text-[9px] text-slate-400 font-mono">IND</span>
+              </div>
+              <div id="val-gst-card" class="mt-1 text-sm sm:text-[15px] font-mono font-bold text-emerald-400 tabular-nums py-0.5">3% GST</div>
+              <div class="mt-1 text-[9px] font-mono text-slate-400 truncate">Live Bullion</div>
+            </div>
+          </div>
+
+          <!-- Tax & Feed Strip -->
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-lg bg-card/80 border border-white/5 text-[11px]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400">Tax Mode:</span>
+              <span id="gst-badge" class="px-1.5 py-0.5 rounded bg-gold-500/20 text-gold-300 font-semibold text-[10px]">Incl. 3% GST</span>
+            </div>
+            <div class="text-slate-400 font-mono text-[10px]">
+              Feed: <span class="text-emerald-400 font-semibold">MCX Live</span>
+            </div>
+          </div>
+
+          <!-- Main Bullion Table -->
+          <div class="bg-card rounded-2xl border border-gold-500/25 overflow-hidden shadow-goldGlow">
+            <div class="grid grid-cols-12 items-center px-3.5 py-2.5 bg-gradient-to-r from-gold-500/20 via-gold-500/10 to-transparent border-b border-gold-500/20 text-[11px] font-bold uppercase tracking-wider text-gold-300">
+              <div class="col-span-6">Product</div>
+              <div class="col-span-3 text-right">Buy (₹)</div>
+              <div class="col-span-3 text-right">Sell (₹)</div>
+            </div>
+            <div id="live-rates-list" class="divide-y divide-white/5"></div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="grid grid-cols-2 gap-2.5 pt-1">
+            <a href="tel:+919417490801" class="flex items-center justify-center gap-2 py-3 px-3 rounded-xl bg-card border border-gold-500/35 hover:bg-gold-500/10 text-gold-300 font-semibold text-xs transition-all active:scale-95">
+              <span>Call Booking Desk</span>
+            </a>
+            <button id="whatsapp-quick-btn" type="button" class="flex items-center justify-center gap-2 py-3 px-3 rounded-xl bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-300 font-semibold text-xs transition-all active:scale-95">
+              <span>WhatsApp Booking</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: COINS & BARS -->
+      <section id="tab-coins" class="tab-panel hidden p-3.5 space-y-3.5">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-white">Coins &amp; Bars</h2>
+            <p class="text-[11px] text-slate-400">Live calculated from Gold 995 &amp; Silver 999 rates</p>
+          </div>
+          <div class="flex bg-card p-1 rounded-xl border border-white/10 text-xs font-semibold">
+            <button data-coin-filter="all" class="coin-filter-btn px-2.5 py-1 rounded-lg bg-gold-500 text-obsidian transition-all">All</button>
+            <button data-coin-filter="gold" class="coin-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all">Gold</button>
+            <button data-coin-filter="silver" class="coin-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all">Silver</button>
+          </div>
+        </div>
+        <div id="coins-catalog" class="grid grid-cols-1 gap-3"></div>
+      </section>
+
+      <!-- TAB 3: UPDATES -->
+      <section id="tab-updates" class="tab-panel hidden p-3.5 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-white">Market Updates &amp; Alerts</h2>
+            <p class="text-[11px] text-slate-400">Official broadcasts from Dewan Jewellers</p>
+          </div>
+          <span id="updates-count-badge" class="px-2.5 py-1 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-300 text-[11px] font-bold">0 Alerts</span>
+        </div>
+        <div id="updates-list" class="space-y-3"></div>
+      </section>
+
+      <!-- TAB 4: CONTACT & BANK -->
+      <section id="tab-contact" class="tab-panel hidden p-3.5 space-y-4">
+        <div class="bg-card rounded-2xl border border-gold-500/20 p-4 space-y-3.5">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-gold-400">Showroom &amp; Bullion Desk</span>
+            <h2 class="text-lg font-extrabold text-white mt-0.5">Dewan Jewellers</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Hall Bazar, Near Golden Temple Road, Amritsar, Punjab - 143001</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2.5 pt-1">
+            <a href="tel:+919417490801" class="bg-obsidian/80 rounded-xl p-3 border border-white/5">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Booking Desk</div>
+              <div class="text-sm font-mono font-bold text-gold-300 mt-1">+91 94174 90801</div>
+            </a>
+            <a href="tel:+916280701982" class="bg-obsidian/80 rounded-xl p-3 border border-white/5">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Wholesale Desk</div>
+              <div class="text-sm font-mono font-bold text-gold-300 mt-1">+91 62807 01982</div>
+            </a>
+          </div>
+        </div>
+
+        <div class="bg-card rounded-2xl border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">RTGS / NEFT Bank Details</h3>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">PNB BANK</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between bg-obsidian/70 rounded-xl px-3 py-2.5 border border-white/5">
+              <div><div class="text-[10px] text-slate-400">Account Name</div><div class="font-semibold text-white mt-0.5">DEWAN JEWELLERS</div></div>
+              <button type="button" onclick="copyText('DEWAN JEWELLERS', 'Account Name')" class="px-2.5 py-1.5 rounded-lg bg-gold-500/15 text-gold-300 font-semibold text-[11px]">Copy</button>
+            </div>
+            <div class="flex items-center justify-between bg-obsidian/70 rounded-xl px-3 py-2.5 border border-white/5">
+              <div><div class="text-[10px] text-slate-400">Account Number</div><div class="font-mono font-bold text-gold-300 mt-0.5">1160002100318454</div></div>
+              <button type="button" onclick="copyText('1160002100318454', 'Account Number')" class="px-2.5 py-1.5 rounded-lg bg-gold-500/15 text-gold-300 font-semibold text-[11px]">Copy</button>
+            </div>
+            <div class="flex items-center justify-between bg-obsidian/70 rounded-xl px-3 py-2.5 border border-white/5">
+              <div><div class="text-[10px] text-slate-400">IFSC Code • Branch</div><div class="font-mono font-semibold text-white mt-0.5">PUNB0340000 • Majitha Road, Amritsar</div></div>
+              <button type="button" onclick="copyText('PUNB0340000', 'IFSC Code')" class="px-2.5 py-1.5 rounded-lg bg-gold-500/15 text-gold-300 font-semibold text-[11px]">Copy</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- BOTTOM NAVIGATION (iOS HOME BAR SAFE) -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-30 bg-obsidian/95 backdrop-blur-md border-t border-white/10 px-2 pt-1.5 nav-pb-safe">
+      <div class="grid grid-cols-4 gap-1">
+        <button type="button" data-tab="live" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gold-400 bg-gold-500/10">
+          <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span class="text-[10px] font-bold">Live Rates</span>
+        </button>
+        <button type="button" data-tab="coins" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400">
+          <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h6M9 14h6"/></svg>
+          <span class="text-[10px] font-semibold">Coins &amp; Bars</span>
+        </button>
+        <button type="button" data-tab="updates" class="nav-btn relative flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400">
+          <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="text-[10px] font-semibold">Updates</span>
+        </button>
+        <button type="button" data-tab="contact" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400">
+          <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span class="text-[10px] font-semibold">Contact &amp; Bank</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- BOOKING MODAL -->
+    <div id="booking-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4">
+      <div class="w-full max-w-md bg-card border-t sm:border border-gold-500/35 rounded-t-3xl sm:rounded-2xl p-5 pb-8 space-y-4 shadow-2xl">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-gold-400">Lock Rate &amp; Book</span>
+            <h3 id="book-item-name" class="text-base font-extrabold text-white mt-0.5">Dewan Gold Bar</h3>
+            <p id="book-item-purity" class="text-xs text-slate-400">999.9 Fine Purity</p>
+          </div>
+          <button id="close-booking-btn" type="button" class="p-2 rounded-xl bg-white/5 text-slate-300">✕</button>
+        </div>
+        <div class="flex items-center justify-between bg-obsidian/80 rounded-xl p-3 border border-white/10">
+          <span class="text-xs font-semibold text-slate-300">Quantity</span>
+          <div class="flex items-center gap-3">
+            <button id="book-qty-minus" type="button" class="w-8 h-8 rounded-lg bg-card border border-white/15 text-white font-bold">−</button>
+            <span id="book-qty-val" class="font-mono font-bold text-sm text-white w-6 text-center">1</span>
+            <button id="book-qty-plus" type="button" class="w-8 h-8 rounded-lg bg-card border border-white/15 text-white font-bold">+</button>
+          </div>
+        </div>
+        <div class="bg-obsidian/80 rounded-xl p-3.5 border border-white/10 space-y-2 text-xs">
+          <div class="flex justify-between text-slate-400"><span>Total Payable</span><span id="book-total-val" class="text-lg font-mono font-extrabold text-gold-400 tabular-nums">₹0</span></div>
+        </div>
+        <button id="book-whatsapp-btn" type="button" class="w-full py-3 rounded-xl btn-gold font-extrabold text-xs shadow-goldGlow">Book on WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast-box" class="fixed top-16 left-1/2 -translate-x-1/2 z-[60] pointer-events-none transition-all duration-300 opacity-0 -translate-y-2">
+      <div class="px-4 py-2.5 rounded-xl bg-obsidian/95 border border-gold-500/45 shadow-xl flex items-center gap-2 text-xs font-semibold text-gold-300 whitespace-nowrap">
+        <span class="w-2 h-2 rounded-full bg-gold-400"></span>
+        <span id="toast-msg">Notification</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+      const BASE_URL = 'https://dewan-bullion-backend.onrender.com';
+      const WS_URL = 'wss://dewan-bullion-backend.onrender.com/ws/rates/';
+
+      // Show iOS install banner only in iPhone/iPad Safari when not already installed
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIOS && !isStandalone && !localStorage.getItem('dewan_ios_banner_dismissed')) {
+        document.getElementById('ios-install-banner').classList.remove('hidden');
+      }
+      document.getElementById('dismiss-ios-banner')?.addEventListener('click', () => {
+        document.getElementById('ios-install-banner').classList.add('hidden');
+        localStorage.setItem('dewan_ios_banner_dismissed', '1');
+      });
+
+      const state = {
+        isFrozen: false,
+        includeGst: true,
+        coinFilter: 'all',
+        gold995Sell: 125000,
+        silver999Sell: 150000,
+        tickerMessage: 'DEWAN JEWELLERS LIVE MCX BULLION...',
+        products: [
+          { id: 'gold995',    name: 'GOLD 995',          unit: '10g • Standard',   metal: 'gold',   buy: 0, sell: 0, high: 0, low: 0 },
+          { id: 'gold24rtgs', name: 'GOLD 24K RTGS',     unit: '10g • Bank Bill',  metal: 'gold',   buy: 0, sell: 0, high: 0, low: 0 },
+          { id: 'gold22hm',   name: 'GOLD 22K HALLMARK', unit: '10g • 916 BIS',    metal: 'gold',   buy: 0, sell: 0, high: 0, low: 0 },
+          { id: 'silver999',  name: 'SILVER 999',        unit: '1 KG • Fine Bar',  metal: 'silver', buy: 0, sell: 0, high: 0, low: 0 },
+          { id: 'silverpeti', name: 'SILVER PETI',       unit: '1 KG • Bulk Peti', metal: 'silver', buy: 0, sell: 0, high: 0, low: 0 }
+        ],
+        coins: [
+          { id: 'c_g05',  name: 'Dewan Gold Coin (500mg)', metal: 'gold',   grams: 0.5,  purityLabel: '24K • 999.0 Fine',  badge: 'Mini' },
+          { id: 'c_g1',   name: 'Dewan Gold Coin (1g)',    metal: 'gold',   grams: 1,    purityLabel: '24K • 999.0 Fine',  badge: 'Popular' },
+          { id: 'c_g2',   name: 'Dewan Gold Coin (2g)',    metal: 'gold',   grams: 2,    purityLabel: '24K • 999.0 Fine',  badge: 'Gifting' },
+          { id: 'c_g5',   name: 'Dewan Gold Coin (5g)',    metal: 'gold',   grams: 5,    purityLabel: '24K • 999.0 Fine',  badge: 'Certified' },
+          { id: 'c_g10',  name: 'Dewan Gold Bar (10g)',    metal: 'gold',   grams: 10,   purityLabel: '24K • 999.9 Mint',  badge: 'Best Seller' },
+          { id: 'c_g20',  name: 'Dewan Gold Bar (20g)',    metal: 'gold',   grams: 20,   purityLabel: '24K • 999.9 Mint',  badge: 'Investment' },
+          { id: 'c_s10',  name: 'Dewan Silver Coin (10g)', metal: 'silver', grams: 10,   purityLabel: '999.0 Fine Silver', badge: 'Shagun' },
+          { id: 'c_s20',  name: 'Dewan Silver Coin (20g)', metal: 'silver', grams: 20,   purityLabel: '999.0 Fine Silver', badge: 'Gifting' },
+          { id: 'c_s50',  name: 'Dewan Silver Bar (50g)',  metal: 'silver', grams: 50,   purityLabel: '999.0 Fine Silver', badge: 'Popular' },
+          { id: 'c_s100', name: 'Dewan Silver Bar (100g)', metal: 'silver', grams: 100,  purityLabel: '999.0 Fine Silver', badge: 'Gift Pack' },
+          { id: 'c_s1k',  name: 'Dewan Silver Bar (1 Kg)', metal: 'silver', grams: 1000, purityLabel: '999.0 Fine Chorsa', badge: 'Wholesale' }
+        ],
+        alerts: [],
+        booking: { coin: null, qty: 1, unitPrice: 0 }
+      };
+
+      const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+      const fmt = (n) => inr.format(Math.round(n || 0));
+
+      let toastTimer;
+      function showToast(msg) {
+        const box = document.getElementById('toast-box');
+        document.getElementById('toast-msg').textContent = msg;
+        box.classList.remove('opacity-0', '-translate-y-2');
+        box.classList.add('opacity-100', 'translate-y-0');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          box.classList.add('opacity-0', '-translate-y-2');
+          box.classList.remove('opacity-100', 'translate-y-0');
+        }, 2400);
+      }
+
+      window.copyText = (text, label) => {
+        navigator.clipboard?.writeText(text);
+        showToast(`${label} copied`);
+      };
+
+      function flash(el, dir) {
+        if (!el || dir === 0) return;
+        el.classList.remove('flash-up', 'flash-down');
+        void el.offsetWidth;
+        el.classList.add(dir > 0 ? 'flash-up' : 'flash-down');
+      }
+
+      function renderTableShell() {
+        document.getElementById('live-rates-list').innerHTML = state.products.map(p => `
+          <div class="grid grid-cols-12 items-center px-3.5 py-3 hover:bg-cardHover/60 transition-colors">
+            <div class="col-span-6 pr-2">
+              <div class="flex items-center gap-2">
+                <span class="w-1 h-7 rounded-full ${p.metal === 'gold' ? 'bg-gold-400' : 'bg-slate-300'} shrink-0"></span>
+                <div class="min-w-0">
+                  <div class="text-xs sm:text-[13px] font-bold text-white truncate">${p.name}</div>
+                  <div class="text-[10px] text-slate-400 truncate">${p.unit}</div>
+                </div>
+              </div>
+              <div class="mt-1.5 pl-3 flex items-center gap-2 text-[9px] font-mono tabular-nums text-slate-400">
+                <span>H: <span id="high-${p.id}" class="text-emerald-400 font-semibold">--</span></span>
+                <span class="text-slate-600">|</span>
+                <span>L: <span id="low-${p.id}" class="text-red-400 font-semibold">--</span></span>
+              </div>
+            </div>
+            <div class="col-span-3 pl-1 flex justify-end">
+              <div id="buy-${p.id}" class="w-full max-w-[96px] text-right font-mono font-bold text-xs sm:text-[13px] text-slate-100 tabular-nums px-2 py-1.5 rounded-lg bg-obsidian/80 border border-white/10">--</div>
+            </div>
+            <div class="col-span-3 pl-1.5 flex justify-end">
+              <div id="sell-${p.id}" class="w-full max-w-[96px] text-right font-mono font-bold text-xs sm:text-[13px] text-gold-300 tabular-nums px-2 py-1.5 rounded-lg bg-gold-500/10 border border-gold-500/25">--</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function applyLiveData(data) {
+        if (!data || !data.rates) return;
+        state.isFrozen = data.market_status === 'FROZEN';
+        state.includeGst = !!data.gst_applied;
+
+        const pill = document.getElementById('market-status-pill');
+        const dot = document.getElementById('status-dot');
+        const ping = document.getElementById('status-ping');
+        const txt = document.getElementById('status-text');
+        const banner = document.getElementById('frozen-banner');
+
+        txt.textContent = state.isFrozen ? 'HELD' : (data.market_status || 'LIVE_MCX');
+        if (state.isFrozen) {
+          pill.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/40';
+          dot.className = 'relative inline-flex rounded-full h-2 w-2 bg-red-500';
+          ping.classList.add('hidden');
+          txt.className = 'text-[9px] font-bold tracking-wider text-red-400 uppercase whitespace-nowrap';
+          banner.classList.remove('hidden');
+        } else {
+          pill.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40';
+          dot.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+          ping.classList.remove('hidden');
+          ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
+          txt.className = 'text-[9px] font-bold tracking-wider text-emerald-400 uppercase whitespace-nowrap';
+          banner.classList.add('hidden');
+        }
+
+        document.getElementById('gst-badge').textContent = state.includeGst ? `Incl. ${data.gst_percent || 3}% GST` : 'Excl. GST';
+        document.getElementById('val-gst-card').textContent = state.includeGst ? `${data.gst_percent || 3}% GST` : 'EXCL GST';
+        if (data.ticker_text && data.ticker_text !== state.tickerMessage) {
+          state.tickerMessage = data.ticker_text;
+          document.getElementById('marquee-track').innerHTML = `<span class="px-4">${data.ticker_text}</span><span class="px-4">${data.ticker_text}</span>`;
+        }
+
+        if (data.raw_mcx) {
+          document.getElementById('val-mcx-gold').textContent = '₹' + fmt(data.raw_mcx.gold_10g);
+          document.getElementById('sym-mcx-gold').textContent = data.raw_mcx.gold_symbol || 'GOLD';
+          document.getElementById('val-mcx-silver').textContent = '₹' + fmt(data.raw_mcx.silver_1kg);
+          document.getElementById('sym-mcx-silver').textContent = data.raw_mcx.silver_symbol || 'SILVER';
+        }
+
+        const r = data.rates;
+        state.gold995Sell = r.GOLD_999.sell;
+        state.silver999Sell = r.SILVER_999.sell;
+        const mapped = {
+          gold995:    { buy: r.GOLD_999.buy, sell: r.GOLD_999.sell },
+          gold24rtgs: { buy: r.GOLD_999.buy + 320, sell: r.GOLD_999.sell + 320 },
+          gold22hm:   { buy: r.GOLD_22K.buy, sell: r.GOLD_22K.sell },
+          silver999:  { buy: r.SILVER_999.buy, sell: r.SILVER_999.sell },
+          silverpeti: { buy: r.SILVER_999.buy - 800, sell: r.SILVER_999.sell - 800 }
+        };
+
+        state.products.forEach(p => {
+          const next = mapped[p.id];
+          const bDir = p.buy ? (next.buy > p.buy ? 1 : next.buy < p.buy ? -1 : 0) : 0;
+          const sDir = p.sell ? (next.sell > p.sell ? 1 : next.sell < p.sell ? -1 : 0) : 0;
+          p.buy = next.buy; p.sell = next.sell;
+          p.high = p.high ? Math.max(p.high, p.sell) : p.sell;
+          p.low = p.low ? Math.min(p.low, p.sell) : p.sell;
+
+          const bEl = document.getElementById(`buy-${p.id}`);
+          const sEl = document.getElementById(`sell-${p.id}`);
+          bEl.textContent = fmt(p.buy); flash(bEl, bDir);
+          sEl.textContent = fmt(p.sell); flash(sEl, sDir);
+          document.getElementById(`high-${p.id}`).textContent = fmt(p.high);
+          document.getElementById(`low-${p.id}`).textContent = fmt(p.low);
+        });
+
+        renderCoins();
+
+        if (Array.isArray(data.alerts)) {
+          state.alerts = data.alerts;
+          document.getElementById('updates-count-badge').textContent = `${state.alerts.length} Alerts`;
+          document.getElementById('updates-list').innerHTML = state.alerts.map(a => `
+            <article class="bg-card rounded-2xl border border-white/10 p-4 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-gold-500/15 text-gold-300 border border-gold-500/30">${a.time}</span>
+              </div>
+              <h3 class="text-sm font-bold text-white">${a.title}</h3>
+              <p class="text-xs text-slate-300">${a.message}</p>
+            </article>
+          `).join('');
+        }
+      }
+
+      function renderCoins() {
+        const list = state.coins.filter(c => state.coinFilter === 'all' || c.metal === state.coinFilter);
+        document.getElementById('coins-catalog').innerHTML = list.map(c => {
+          const basePrice = c.metal === 'gold'
+            ? (state.gold995Sell / 10) * c.grams
+            : (state.silver999Sell / 1000) * c.grams;
+          const makingCharge = basePrice * 0.02;
+          const price = Math.round(basePrice + makingCharge);
+          const weightLabel = c.grams >= 1000 ? '1 KG' : c.grams < 1 ? (c.grams * 1000) + 'mg' : c.grams + 'g';
+
+          return `
+            <div class="bg-card rounded-2xl border border-white/10 p-3.5 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${c.metal === 'gold' ? 'from-gold-300 via-gold-500 to-gold-600' : 'from-slate-200 via-slate-400 to-slate-500'} text-obsidian flex flex-col items-center justify-center shrink-0">
+                  <span class="text-[10px] font-extrabold leading-tight">${weightLabel}</span>
+                  <span class="text-[8px] font-bold">${c.metal === 'gold' ? '999' : 'AG'}</span>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-xs sm:text-sm font-bold text-white truncate">${c.name}</h3>
+                  <p class="text-[11px] text-slate-400">${c.purityLabel} • Incl. 2% Making</p>
+                </div>
+              </div>
+              <div class="text-right shrink-0 flex flex-col items-end gap-1.5">
+                <div class="font-mono font-extrabold text-sm text-gold-300 tabular-nums">₹${fmt(price)}</div>
+                <button onclick="openBooking('${c.id}', ${price})" class="px-3 py-1.5 rounded-lg btn-gold text-[11px] font-extrabold">Lock &amp; Book</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      window.openBooking = (id, unitPrice) => {
+        const coin = state.coins.find(c => c.id === id);
+        state.booking = { coin, qty: 1, unitPrice };
+        document.getElementById('book-item-name').textContent = coin.name;
+        document.getElementById('book-item-purity').textContent = coin.purityLabel;
+        document.getElementById('book-qty-val').textContent = '1';
+        document.getElementById('book-total-val').textContent = '₹' + fmt(unitPrice);
+        document.getElementById('booking-modal').classList.remove('hidden');
+        document.getElementById('booking-modal').classList.add('flex');
+      };
+
+      function connectWS() {
+        const ws = new WebSocket(WS_URL);
+        ws.onmessage = (e) => { try { applyLiveData(JSON.parse(e.data)); } catch {} };
+        ws.onclose = () => setTimeout(connectWS, 3000);
+        ws.onerror = () => ws.close();
+      }
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const t = btn.dataset.tab;
+          document.querySelectorAll('.tab-panel').forEach(p => { p.classList.toggle('hidden', p.id !== `tab-${t}`); p.classList.toggle('block', p.id === `tab-${t}`); });
+          document.querySelectorAll('.nav-btn').forEach(b => {
+            const on = b.dataset.tab === t;
+            b.classList.toggle('text-gold-400', on); b.classList.toggle('bg-gold-500/10', on); b.classList.toggle('text-slate-400', !on);
+          });
+        });
+      });
+
+      document.querySelectorAll('.coin-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.coinFilter = btn.dataset.coinFilter;
+          document.querySelectorAll('.coin-filter-btn').forEach(b => {
+            const on = b.dataset.coinFilter === state.coinFilter;
+            b.classList.toggle('bg-gold-500', on); b.classList.toggle('text-obsidian', on); b.classList.toggle('text-slate-400', !on);
+          });
+          renderCoins();
+        });
+      });
+
+      document.getElementById('close-booking-btn').addEventListener('click', () => { document.getElementById('booking-modal').classList.add('hidden'); });
+      document.getElementById('book-qty-minus').addEventListener('click', () => {
+        if (state.booking.qty > 1) { state.booking.qty--; document.getElementById('book-qty-val').textContent = state.booking.qty; document.getElementById('book-total-val').textContent = '₹' + fmt(state.booking.unitPrice * state.booking.qty); }
+      });
+      document.getElementById('book-qty-plus').addEventListener('click', () => {
+        state.booking.qty++; document.getElementById('book-qty-val').textContent = state.booking.qty; document.getElementById('book-total-val').textContent = '₹' + fmt(state.booking.unitPrice * state.booking.qty);
+      });
+      document.getElementById('book-whatsapp-btn').addEventListener('click', () => {
+        const b = state.booking;
+        window.open(`https://wa.me/919417490801?text=${encodeURIComponent(`Hello Dewan Jewellers, I want to book ${b.qty} x ${b.coin.name} at ₹${fmt(b.unitPrice * b.qty)}.`)}`, '_blank');
+      });
+      document.getElementById('whatsapp-quick-btn').addEventListener('click', () => {
+        window.open(`https://wa.me/919417490801?text=${encodeURIComponent(`Hello Dewan Jewellers, Current Live GOLD 995 (10g): ₹${fmt(state.gold995Sell)}.`)}`, '_blank');
+      });
+
+      renderTableShell();
+      setInterval(() => {
+        document.getElementById('ist-clock').textContent = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true }).toUpperCase() + ' IST';
+      }, 1000);
+      fetch(`${BASE_URL}/api/rates`).then(r => r.json()).then(applyLiveData).catch(() => {});
+      connectWS();
+    })();
+  </script>
+</body>
+</html>
